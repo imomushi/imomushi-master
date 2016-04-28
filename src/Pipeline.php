@@ -2,6 +2,8 @@
 
 class Pipeline
 {
+	const SEGMENT_TYPE_OUTPUT = 'output';
+	const SEGMENT_TYPE_INPUT  = 'input';
 	const STATUS_WAITING = 0;
 	const STATUS_RUNNING = 1;
 	const STATUS_DONE    = 2;
@@ -13,14 +15,17 @@ class Pipeline
 
 	public function __construct($id, $request_id, $pipeline, $args)
 	{
-		$this->id = $id;
-		$this->request_id = $request_id;
-		$this->segments = $pipeline['segments'];
+		// Initialize variables
+		$this->id           = $id;
+		$this->request_id   = $request_id;
+		$this->segments     = $pipeline['segments'];
 		$this->dependencies = $pipeline['dependencies'];
 
+		// Initialize segments status
 		foreach ($this->segments as $k => $v)
 		{
-			if ($v['type'] === 'input')
+			$this->segments[$k]['input'] = [];
+			if ($v['type'] === self::SEGMENT_TYPE_INPUT)
 			{
 				$this->segments[$k]['result'] = $args;
 				$this->segments[$k]['status'] = self::STATUS_DONE;
@@ -32,12 +37,6 @@ class Pipeline
 		}
 	}
 
-	public function updatePipelineStatus($id, $result)
-	{
-		$this->segments[$id]['result'] = $result;
-		$this->segments[$id]['status'] = self::STATUS_DONE;
-	}
-
 	public function getRunnableSegments()
 	{
 		$segments = $this->segments;
@@ -45,7 +44,7 @@ class Pipeline
 		// Remove segements which are done or running.
 		foreach($segments as $k => $v)
 		{
-			if ($segments[$k]['status'] !== self::STATUS_WAITING)
+			if ($v['status'] !== self::STATUS_WAITING)
 			{
 				unset($segments[$k]);
 			}
@@ -54,22 +53,17 @@ class Pipeline
 		// Remove segements which cannot be started
 		foreach($this->dependencies as $d)
 		{
-			if (isset($segments[$d['to']]))
+			$to = $d['to'];
+			$fr = $d['from'];
+			if (isset($segments[$to]))
 			{
-				if (isset($this->segments[$d['from']]['result']))
+				if ($this->segments[$fr]['status'] === self::STATUS_DONE)
 				{
-					if (isset($segments[$d['to']]['input']))
-					{
-						$segments[$d['to']]['input'] = array_merge($segments[$d['to']]['input'], $this->segments[$d['from']]['result']);
-					}
-					else
-					{
-						$segments[$d['to']]['input'] = $this->segments[$d['from']]['result'];
-					}
+					$segments[$to]['input'] += $this->segments[$fr]['result'];
 				}
 				else
 				{
-					unset($segments[$d['to']]);
+					unset($segments[$to]);
 				}
 			}
 		}
@@ -89,9 +83,12 @@ class Pipeline
 		return $segments;
 	}
 
-	public function updateSegmentStatus($id, $status)
+	public function updateSegmentStatus($id, $status, $result = null)
 	{
 		$this->segments[$id]['status'] = $status;
+		if ($result !== null && $status === self::STATUS_DONE) {
+			$this->segments[$id]['result'] = $result;
+		}
 	}
 	public function getRequestId()
 	{
