@@ -54,11 +54,18 @@ class imomushiMaster
 	
 	private $segments;
 	private $dependencies;
+	private $results_count;
 
 	public function __construct($pipeline)
 	{
 		$this->segments = $pipeline['segments'];
 		$this->dependencies = $pipeline['dependencies'];
+
+		// check results file line count
+		$fp = fopen(self::OUTPUT, 'r' );
+		for( $count = 0; fgets( $fp ); $count++ );
+		$this->results_count = $count;
+		fclose($fp);
 
 		foreach ($this->segments as $k => $v)
 		{
@@ -127,13 +134,26 @@ class imomushiMaster
 
 	public function receiveResult()
 	{
-		// TODO
-		foreach ($this->segments as $k => $v)
+		while (1)
 		{
-			if ($v['status'] === self::STATUS_RUNNING)
+			$fp = fopen( self::OUTPUT, 'r' );
+			$count = 0;
+			$changed = false;
+			
+			while($line = fgets( $fp ))
 			{
-				$this->updatePipelineStatus($k, ['hoge'.$k => 'fuga']);
+				$count++;
+				if ($count > $this->results_count)
+				{
+					$this->results_count = $count;
+					$output = json_decode($line);
+					$this->updatePipelineStatus($output->id, (array)$output->result);
+					$changed = true;
+				}
 			}
+			fclose($fp);
+			if ($changed) break;
+			usleep(10*1000);
 		}
 	}
 
@@ -146,6 +166,16 @@ class imomushiMaster
 			$this->segments[$k]['status'] = self::STATUS_RUNNING;
 			$continue = true;
 		}
+		// Check Running Segments
+		foreach ($this->segments as $v)
+		{
+			if ($v['status'] === self::STATUS_RUNNING)
+			{
+				$continue = true;
+			}
+			
+		}
+		
 		return $continue;
 	}
 }
