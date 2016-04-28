@@ -114,7 +114,7 @@ class ImomushiMaster
 
 	private function writeSegmentInput($pipeline_id, $segment_id, $function, $args)
 	{
-		$input = json_encode(['pipeline_id' => $pipeline_id, 'segment_id' => $segment_id, 'function' => $function, 'args' => $args]);
+		$input = json_encode(['pipeline_id' => $pipeline_id, 'segment_id' => $segment_id, 'segment' => $function, 'args' => $args]);
 		file_put_contents(self::FILE_SEGMENT_INPUT, $input.PHP_EOL, FILE_APPEND);
 	}
 

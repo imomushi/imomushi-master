@@ -7,7 +7,8 @@ $config['pipeline_definition'] = [
 		'segments' => [
 			1 => [
 				'type' => 'input',
-				'protocol' => 'HTTP',
+				'path' => '/bot',
+				'protocol' => 'http',
 			],
 			2 => [
 				'type' => 'function',
@@ -27,7 +28,7 @@ $config['pipeline_definition'] = [
 			],
 			6 => [
 				'type' => 'output',
-				'protocol' => 'HTTP',
+				'protocol' => 'http',
 			]
 		],
 		'dependencies' => [
@@ -47,8 +48,27 @@ $config['pipeline_definition'] = [
 				'from' => 4,
 				'to' => 5,
 			],[
-				'from' => 5,
+				'from' => 1,
 				'to' => 6,
+			]
+		]
+	],
+	'pipeline2' => [
+		'segments' => [
+			1 => [
+				'type' => 'input',
+				'path' => '/hoge',
+				'protocol' => 'http',
+			],
+			2 => [
+				'type' => 'output',
+				'protocol' => 'http',
+			]
+		],
+		'dependencies' => [
+			[
+				'from' => 1,
+				'to' => 2,
 			]
 		]
 	]
