@@ -68,7 +68,8 @@ class ImomushiMaster
 					break;
 				default:
 					$this->log('Send segment (ID:'.$id.':'.$k.') to '.self::FILE_SEGMENT_INPUT);
-					$this->writeSegmentInput($id, $k, $v['function'], $v['input']);
+                    $config = (isset($v['config'])) ? $v['config'] : [];
+					$this->writeSegmentInput($id, $k, $v['function'], array_merge($config, $v['input']));
 					$pipeline->updateSegmentStatus($k, Pipeline::STATUS_RUNNING);
 					$finished = false;
 				}
