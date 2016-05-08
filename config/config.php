@@ -3,6 +3,43 @@
 $config = [];
 
 $config['pipeline_definition'] = [
+/* PIPELINE EXAMPLE */
+/*
+	'PIPELINE_NAME' => [
+		'segments' => [
+			1 => [
+				'type' => 'input',
+				'path' => '/PATH1/PATH2',
+				'protocol' => 'http',
+				'method' => 'post', // default: 'get'
+			],
+			2 => [
+				'type' => 'function',
+				'function' => 'FUNCTION_NAME',
+				'config' => [
+                    'ENV_VALUE_NAME' => getenv('ENVIRONMENTAL_VALUE')
+                ],
+				'error_config' => [
+					'skip'   => true, // default: false
+					'report' => true, // default: true
+				],
+			],
+			99 => [
+				'type' => 'output',
+				'protocol' => 'http',
+			]
+		],
+		'dependencies' => [
+			[
+				'from' => 1,
+				'to' => 2,
+			],[
+				'from' => 2,
+				'to' => 99,
+			]
+		]
+	],
+*/
 	'fbbot' => [
 		'segments' => [
 			1 => [
@@ -67,6 +104,57 @@ $config['pipeline_definition'] = [
 			]
 		]
 	],
+	'error_pattern' => [
+        'segments' => [
+			1 => [
+				'type' => 'input',
+				'path' => '/imomushi/basic/error',
+				'protocol' => 'http',
+			],
+			2 => [
+				'type' => 'function',
+				'function' => 'BasicError',
+				'error_config' => [
+					'skip'   => true,
+					'report' => false,
+				],
+			],
+			3 => [
+				'type' => 'function',
+				'function' => 'BasicError',
+				'error_config' => [
+					'skip'   => false,
+					'report' => true,
+				],
+			],
+			4 => [
+				'type' => 'function',
+				'function' => 'BasicEcho',
+				'config' => [
+					'text'   => 'Segment 4',
+				],
+			],
+			99 => [
+				'type' => 'output',
+				'protocol' => 'http',
+			]
+		],
+		'dependencies' => [
+			[
+				'from' => 1,
+				'to' => 2,
+			],[
+				'from' => 2,
+				'to' => 3,
+			],[
+				'from' => 3,
+				'to' => 4,
+			],[
+				'from' => 4,
+				'to' => 99,
+			]
+		]
+    ],
 	'rakuten' => [
 		'segments' => [
 			1 => [
@@ -125,6 +213,7 @@ $config['pipeline_definition'] = [
 				'type' => 'input',
 				'path' => '/imomushi/repeat',
 				'protocol' => 'http',
+				'method' => 'post',
 			],
 			2 => [
 				'type' => 'function',
@@ -132,7 +221,7 @@ $config['pipeline_definition'] = [
 			],
 			3 => [
 				'type' => 'function',
-				'function' => 'LineEchoBack',
+				'function' => 'LineSendMessage',
 				'config' => [
 					 'line_channel_id'     => getenv('LINE_CHANNEL_ID'),
 					 'line_channel_secret' => getenv('LINE_CHANNEL_SECRET'),

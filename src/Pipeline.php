@@ -7,6 +7,7 @@ class Pipeline
 	const STATUS_WAITING = 0;
 	const STATUS_RUNNING = 1;
 	const STATUS_DONE    = 2;
+	const STATUS_SKIP    = 3;
 
 	private $id;
 	private $request_id;
@@ -34,6 +35,10 @@ class Pipeline
 			{
 				$this->segments[$k]['status'] = self::STATUS_WAITING;
 			}
+            // Error Config
+            $skip = (isset($this->segments[$k]['error_config']) && isset($this->segments[$k]['error_config']['skip'])) ? $this->segments[$k]['error_config']['skip'] : false;
+            $report = (isset($this->segments[$k]['error_config']) && isset($this->segments[$k]['error_config']['report'])) ? $this->segments[$k]['error_config']['report'] : true;
+            $this->segments[$k]['error_config'] = compact('skip', 'report');
 		}
 	}
 
@@ -57,9 +62,9 @@ class Pipeline
 			$fr = $d['from'];
 			if (isset($segments[$to]))
 			{
-				if ($this->segments[$fr]['status'] === self::STATUS_DONE)
+				if (in_array($this->segments[$fr]['status'], [self::STATUS_DONE, self::STATUS_SKIP]))
 				{
-					$segments[$to]['input'] += $this->segments[$fr]['result'];
+					$segments[$to]['input'] = $this->segments[$fr]['result'];
 				}
 				else
 				{
@@ -85,10 +90,32 @@ class Pipeline
 
 	public function updateSegmentStatus($id, $status, $result = null)
 	{
+        $skipped = [];
 		$this->segments[$id]['status'] = $status;
 		if ($result !== null && $status === self::STATUS_DONE) {
-			$this->segments[$id]['result'] = $result;
+			$this->segments[$id]['result'] = (array)$result['values'];
+            if ($result['status'] !== 200)
+            {
+                if ($this->segments[$id]['error_config']['skip'] === false)
+                {
+                    // Skip Remaining Segments
+                    foreach ($this->segments as $k => $v)
+                    {
+                        if ($v['status'] === self::STATUS_WAITING && $v['type'] !== self::SEGMENT_TYPE_OUTPUT)
+                        {
+                            $this->segments[$k]['status'] = self::STATUS_SKIP;
+                            $this->segments[$k]['result'] = ['dummy' => true];
+                            $skipped[$k] = $this->segments[$k];
+                        }
+                    }
+                }
+                if ($this->segments[$id]['error_config']['report'] === true)
+                {
+                    // Call Error Report Pipeline
+                }
+            }
 		}
+        return $skipped;
 	}
 	public function getRequestId()
 	{

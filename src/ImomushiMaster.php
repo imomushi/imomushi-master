@@ -38,7 +38,15 @@ class ImomushiMaster
 			foreach ($this->checkQue(self::FILE_SEGMENT_OUTPUT) as $output)
 			{
 				$this->log('Read output (ID:'.$output->pipeline_id.':'.$output->segment_id.') from '.self::FILE_SEGMENT_OUTPUT);
-				$this->pipelines[$output->pipeline_id]->updateSegmentStatus($output->segment_id, Pipeline::STATUS_DONE, (array)$output->result);
+                $skipped = $this->pipelines[$output->pipeline_id]->updateSegmentStatus(
+                    $output->segment_id,
+                    Pipeline::STATUS_DONE,
+                    (array)$output->result
+                    );
+                foreach ($skipped as $k => $v)
+                {
+                    $this->log('Skip output (ID:'.$output->pipeline_id.':'.$k.')');
+                }
 				$changed = true;
 			}
 			foreach ($this->checkQue(self::FILE_REQUEST_INPUT) as $output)
